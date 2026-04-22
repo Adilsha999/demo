@@ -1,0 +1,46 @@
+import csv
+import os
+import subprocess
+import json
+
+csv_file = "workload.csv"
+
+#http://eisinfra:Eis2023@ip:port/apiv2/servers/Account_S_01/rest-apis/collateralAccountGold_sys/messageflows/gen.collateralAccountGold_sys/update-tread-pool?size=40&start_all=false&force=false
+
+
+curl_endpoint = "https://10.188.25."
+
+
+curl_template = 'curl -k -X POST -u v1012646:mafiA@33 {endpoint}{server}:{port}/apiv2/servers/{broker_eg}/rest-apis/{api_name}/messageflows/gen.{gen_name}/update-thread-pool?size={new_workload}&start_all=false&force=true'
+
+df = pd.read_csv(csv_file)
+
+
+with open (csv_file , 'r')as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+                api_name = row['API NAME']
+                broker = row['BROKER']
+                broker_eg = row['BROKER EG']
+                new_workload = row['NEW WORKLOAD']
+                server_values = row['SERVERS']
+                if isinstance(server_values, str) and ' ' in server_values:
+                        servers = server_values.split()
+                else:
+                        servers = [server_values]
+                port = row['PORTS']
+                gen_name = row['GEN NAME']
+
+                for server in servers:
+                    curl_command = curl_template.format(endpoint=curl_endpoint, port=port, api_name=api_name, gen_name=gen_name, broker=broker, broker_eg=broker_eg, new_workload=new_workload, server=server)
+                try:
+                    command_ouput = os.popen(curl_command + '2>&1').read()
+                    return_code = os.system(curl_command)
+                if return_code == 0:
+                    print(f"\033[1;32m {broker}, {broker_eg}, {api_name}, {port}, 10.188.25.{server} was successful! \033[0m")
+                else:
+                    print(f"\033[1;31m Curl command failed with return code: {return_code}\033[0m")
+            except Exception as e:
+                print(f"\033[1;31m Error: {e} \033[0m")
+
+
